@@ -2,11 +2,77 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My GitHub Page</title>
+  <title>Facebook Search Builder</title>
+  <script>
+    // Base64 encoding helper
+    function encodeBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function openSearch() {
+      const keyword = document.getElementById("keyword").value.trim();
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+
+      if (!keyword) {
+        alert("Please enter a keyword.");
+        return;
+      }
+      if (!startDate || !endDate) {
+        alert("Please select both start and end dates.");
+        return;
+      }
+
+      // Extract parts of the dates
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      const startYear = start.getFullYear().toString();
+      const startMonth = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
+      const startDay = start.toISOString().split("T")[0];
+
+      const endYear = end.getFullYear().toString();
+      const endMonth = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}`;
+      const endDay = end.toISOString().split("T")[0];
+
+      // Build the data object dynamically
+      const data = {
+        "rp_creation_time": JSON.stringify({
+          name: "creation_time",
+          args: JSON.stringify({
+            start_year: startYear,
+            start_month: startMonth,
+            end_year: endYear,
+            end_month: endMonth,
+            start_day: startDay,
+            end_day: endDay
+          })
+        })
+      };
+
+      // Convert data to JSON string and encode
+      const filterEncoded = encodeBase64(JSON.stringify(data));
+
+      // Build URL
+      const url = `https://www.facebook.com/search/posts?q=${encodeURIComponent(keyword)}&filters=${encodeURIComponent(filterEncoded)}`;
+
+      // Open in new tab
+      window.open(url, "_blank");
+    }
+  </script>
 </head>
 <body>
-  <h1>Hello, World! 🚀</h1>
-  <p>Welcome to my GitHub Page.</p>
+  <h2>Facebook Search Builder</h2>
+  
+  <label for="keyword">Keyword:</label>
+  <input type="text" id="keyword" placeholder="Type a keyword"><br><br>
+
+  <label for="startDate">Start Date:</label>
+  <input type="date" id="startDate"><br><br>
+
+  <label for="endDate">End Date:</label>
+  <input type="date" id="endDate"><br><br>
+
+  <button onclick="openSearch()">Search</button>
 </body>
 </html>
