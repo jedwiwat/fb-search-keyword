@@ -1,98 +1,134 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Facebook Search Builder</title>
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  
-  <script>
-    // Base64 encoding helper
-    function encodeBase64(str) {
-      return btoa(unescape(encodeURIComponent(str)));
-    }
-
-    function openSearch() {
-      const keyword = document.getElementById("keyword").value.trim();
-      const startDate = document.getElementById("startDate").value;
-      const endDate = document.getElementById("endDate").value;
-
-      if (!keyword) {
-        alert("Please enter a keyword.");
-        return;
-      }
-      if (!startDate || !endDate) {
-        alert("Please select both start and end dates.");
-        return;
-      }
-
-      // Extract parts of the dates
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-
-      const startYear = start.getFullYear().toString();
-      const startMonth = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`;
-      const startDay = start.toISOString().split("T")[0];
-
-      const endYear = end.getFullYear().toString();
-      const endMonth = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}`;
-      const endDay = end.toISOString().split("T")[0];
-
-      // Build the data object dynamically
-      const data = {
-        "rp_creation_time": JSON.stringify({
-          name: "creation_time",
-          args: JSON.stringify({
-            start_year: startYear,
-            start_month: startMonth,
-            end_year: endYear,
-            end_month: endMonth,
-            start_day: startDay,
-            end_day: endDay
-          })
-        })
-      };
-
-      console.log(data);
-
-      // Convert data to JSON string and encode
-      const filterEncoded = encodeBase64(JSON.stringify(data));
-
-      // Build URL
-      const url = `https://www.facebook.com/search/posts?q=${encodeURIComponent(keyword)}&filters=${encodeURIComponent(filterEncoded)}`;
-
-      // Open in new tab
-      window.open(url, "_blank");
-    }
-  </script>
+  <link rel="stylesheet" href="https://unpkg.com/@vuepic/vue-datepicker@latest/dist/main.css">
 </head>
+
 <body class="bg-light">
-  <div class="container py-5">
+  <div id="app" class="container py-5">
     <div class="card shadow-sm">
       <div class="card-body">
         <h2 class="card-title mb-4">Facebook Search Builder</h2>
-        
+
         <div class="mb-3">
           <label for="keyword" class="form-label">Keyword</label>
-          <input type="text" id="keyword" class="form-control" placeholder="Type a keyword">
+          <input type="text" v-model="keyword" id="keyword" class="form-control" placeholder="Type a keyword">
         </div>
 
         <div class="mb-3">
-          <label for="startDate" class="form-label">Start Date</label>
-          <input type="date" id="startDate" class="form-control">
+          <label class="form-label">Date Range</label>
+          <vue-date-picker v-model="dateRange" :multi-calendars="{ solo: true }" :range="true" :format="'yyyy-MM-dd'"
+            :teleport="false" :auto-position="'bottom'">
+            <template #left-sidebar>
+              <div class="p-2" style="width: max-content;">
+                <ul class="list-unstyled">
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('3DaysAgo')">3 Days Ago</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('7DaysAgo')">7 Days Ago</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('last7')">Last 7 Days</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('thisMonth')">This Month</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('lastMonth')">Last Month</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('thisYear')">This Year</button></li>
+                  <li><button class="btn btn-link p-0 text-decoration-none text-dark" @click="setRange('lastYear')">Last Year</button></li>
+                </ul>
+              </div>
+            </template>
+          </vue-date-picker>
         </div>
 
-        <div class="mb-3">
-          <label for="endDate" class="form-label">End Date</label>
-          <input type="date" id="endDate" class="form-control">
-        </div>
-
-        <button onclick="openSearch()" class="btn btn-primary">Search</button>
+        <button @click="openSearch" class="btn btn-primary">Search</button>
       </div>
     </div>
   </div>
 
-  <!-- Bootstrap JS (optional, for components like modals/tooltips) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/@vuepic/vue-datepicker@latest"></script>
+
+  <script>
+    const { createApp, ref } = Vue;
+
+    createApp({
+      components: { VueDatePicker },
+      setup() {
+        const keyword = ref('');
+        const dateRange = ref([new Date(), new Date()]); // [startDate, endDate]
+
+        function setRange(range) {
+          const today = new Date();
+          let start = new Date();
+          let end = new Date();
+
+          if (range === '3DaysAgo') {
+            start.setDate(today.getDate() - 3);
+            end = today;
+          } else if (range === '7DaysAgo') {
+            start.setDate(today.getDate() - 7);
+            end = today;
+          } else if (range === 'last7') {
+            start.setDate(today.getDate() - 6);
+            end = today;
+          } else if (range === 'thisMonth') {
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+          } else if (range === 'lastMonth') {
+            start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            end = new Date(today.getFullYear(), today.getMonth(), 0);
+          } else if (range === 'thisYear') {
+            start = new Date(today.getFullYear(), 0, 1);
+            end = new Date(today.getFullYear(), 11, 31);
+          } else if (range === 'lastYear') {
+            start = new Date(today.getFullYear() - 1, 0, 1);
+            end = new Date(today.getFullYear() - 1, 11, 31);
+          }
+
+          dateRange.value = [start, end];
+        }
+
+        function openSearch() {
+          if (!keyword.value) {
+            alert("Please enter a keyword.");
+            return;
+          }
+          const [startDate, endDateVal] = dateRange.value;
+          if (!startDate || !endDateVal) {
+            alert("Please select both start and end dates.");
+            return;
+          }
+
+          const start = new Date(startDate);
+          const end = new Date(endDateVal);
+
+          const data = {
+            "rp_creation_time": JSON.stringify({
+              name: "creation_time",
+              args: JSON.stringify({
+                start_year: start.getFullYear().toString(),
+                start_month: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`,
+                end_year: end.getFullYear().toString(),
+                end_month: `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}`,
+                start_day: start.toISOString().split('T')[0],
+                end_day: end.toISOString().split('T')[0]
+              })
+            })
+          };
+
+          const filterEncoded = encodeBase64(JSON.stringify(data));
+          const url = `https://www.facebook.com/search/posts?q=${encodeURIComponent(keyword.value)}&filters=${encodeURIComponent(filterEncoded)}`;
+          window.open(url, "_blank");
+        }
+
+        // Base64 helper
+        function encodeBase64(str) {
+          return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        return { keyword, dateRange, setRange, openSearch };
+      }
+    }).mount('#app');
+  </script>
 </body>
+
 </html>
